@@ -46,3 +46,37 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+    import asyncio
+import os
+from aiohttp import web
+from aiogram import Bot, Dispatcher
+
+# আপনার বটের টোকেন এবং ডিসপ্যাচার ইনিশিয়ালাইজেশন
+TOKEN = "9279326916:AAEYUtRjvy8zOyvObk4eJ72YzS6ZL5JDh3c"
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
+
+# ১. রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
+async def handle(request):
+    return web.Response(text="Bot is running 24/7!")
+
+app = web.Application()
+app.router.add_get("/", handle)
+
+async def start_web_server():
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 10000))  # Render স্বয়ংক্রিয়ভাবে PORT ভেরিয়েবল দিয়ে দেয়
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+# ২. মূল মেইন ফাংশন যেখানে asyncio.gather ব্যবহার করা হয়েছে
+async def main():
+    # একসাথে ওয়েব সার্ভার এবং বটের পোলিং রান করবে
+    await asyncio.gather(
+        start_web_server(),
+        dp.start_polling(bot)
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
