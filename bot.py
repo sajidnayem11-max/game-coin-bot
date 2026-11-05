@@ -16,7 +16,16 @@ dp = Dispatcher()
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     await message.answer("Assalamu Alaikum!\n\nAmader Game Coin & Diamond Store-e apnake shagotom. 🪙💎\n\nApni kon game-er item kinte chan, niche theke select korun:")
-
+@dp.message(Command("support"))
+async def support_cmd(message: types.Message):
+    support_text = (
+        "🛠 **Customer Support & Assistance**\n\n"
+        "Kono shomossha ba payment related issue- er jonno doya kore amader official support team er sathe jogajog korun:\n\n"
+        "👤 **Support Admin:** @ShamiulAzim1701\n\n"
+        "Amra apnake sahajjo korar jonno 24/7 prostut royechi!"
+    )
+    await message.answer(support_text, parse_mode="Markdown")
+    
 # যখন ইউজার কয়েনের পরিমাণ লিখে পাঠাবে
 @dp.message(F.text.regexp(r'^\d+$'))
 async def process_coin_amount(message: types.Message):
