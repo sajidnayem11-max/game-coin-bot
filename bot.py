@@ -15,7 +15,20 @@ dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    await message.answer("Assalamu Alaikum!\n\nAmader Game Coin & Diamond Store-e apnake shagotom. 🪙💎\n\nApni kon game-er item kinte chan, niche theke select korun:")
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🪙 Flight Charbe Coins", callback_data="buy_flight")],
+            [InlineKeyboardButton(text="💎 Free Fire Diamonds", callback_data="buy_ff")],
+            [InlineKeyboardButton(text="💎 Mobile Legends Diamonds", callback_data="buy_ml")]
+        ]
+    )
+    
+    await message.answer(
+        "Assalamu Alaikum!\n\n"
+        "Amader Game Coin & Diamond Store-e apnake shagotom. 🪙💎\n\n"
+        "Apni kon game-er item kinte chan, niche theke select korun:",
+        reply_markup=keyboard
+    )
 @dp.message(Command("support"))
 async def support_cmd(message: types.Message):
     support_text = (
@@ -25,7 +38,7 @@ async def support_cmd(message: types.Message):
         "Amra apnake sahajjo korar jonno 24/7 prostut royechi!"
     )
     await message.answer(support_text, parse_mode="Markdown")
-    
+
 # যখন ইউজার কয়েনের পরিমাণ লিখে পাঠাবে
 @dp.message(F.text.regexp(r'^\d+$'))
 async def process_coin_amount(message: types.Message):
