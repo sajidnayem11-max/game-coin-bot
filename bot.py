@@ -7,7 +7,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from cryptomus import Client  # ক্রিপ্টোমাস লাইব্রেরি
 
 # আপনার বটের টোকেন এবং ক্রিপ্টোমাস ক্রডেনশিয়াল এখানে বসাবেন
-TOKEN = 9279326916:AAEYUtRjvy8zOyvObk4eJ72YzS6ZL5JDh3c"
+TOKEN = "9279326916:AAFUj10LZj054kY_sefZVKNOG05qETxXp3c"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
