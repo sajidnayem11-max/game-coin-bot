@@ -7,7 +7,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from cryptomus import Client  # ক্রিপ্টোমাস লাইব্রেরি
 
 # আপনার বটের টোকেন এবং ক্রিপ্টোমাস ক্রডেনশিয়াল এখানে বসাবেন
-TOKEN = "9279326916:AAEYUtRjvy8zOyvObk4eJ72YzS6ZL5JDh3c"
+TOKEN = 9279326916:AAEYUtRjvy8zOyvObk4eJ72YzS6ZL5JDh3c"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -30,6 +30,7 @@ async def start_cmd(message: types.Message):
         "Apni kon game-er item kinte chan, niche theke select korun:",
         reply_markup=keyboard
     )
+
 @dp.callback_query(F.data.in_(["buy_flight", "buy_ff", "buy_ml"]))
 async def process_game_selection(callback: types.CallbackQuery):
     game_names = {
@@ -46,6 +47,18 @@ async def process_game_selection(callback: types.CallbackQuery):
         parse_mode="Markdown"
     )
     await callback.answer()
+
+@dp.message(Command("support"))
+async def support_cmd(message: types.Message):
+    support_text = (
+        "🛠 **Customer Support & Assistance**\n\n"
+        "Kono shomossha ba payment related issue- er jonno doya kore amader official support team er sathe jogajog korun:\n\n"
+        "👤 **Support Admin:** @ShamiulAzim1701\n\n"
+        "Amra apnake sahajjo korar jonno 24/7 prostut royechi!"
+    )
+    await message.answer(support_text, parse_mode="Markdown")
+
+# ইউজার যখন কয়েনের পরিমাণ লিখে পাঠাবে (মূল পেমেন্ট পেজ এবং বাটন)
 @dp.message(F.text.regexp(r'^\d+$'))
 async def process_coin_amount(message: types.Message):
     amount = int(message.text)
@@ -67,38 +80,8 @@ async def process_coin_amount(message: types.Message):
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
-@dp.message(Command("support"))
-async def support_cmd(message: types.Message):
-    support_text = (
-        "🛠 **Customer Support & Assistance**\n\n"
-        "Kono shomossha ba payment related issue- er jonno doya kore amader official support team er sathe jogajog korun:\n\n"
-        "👤 **Support Admin:** @ShamiulAzim1701\n\n"
-        "Amra apnake sahajjo korar jonno 24/7 prostut royechi!"
-    )
-    await message.answer(support_text, parse_mode="Markdown")
 
-# যখন ইউজার কয়েনের পরিমাণ লিখে পাঠাবে
-@dp.message(F.text.regexp(r'^\d+$'))
-async def process_coin_amount(message: types.Message):
-    amount = message.text
-    await message.answer(f"**Flight Charbe Coins** select korechen.\n\nApni {amount} ti coin kinte cheyechan. Ekjon merchant payment link toiri hocche...")
-    
-    try:
-        # এখানে ক্রিপ্টোমাস ইনভয়েস তৈরির API কল হবে
-        # invoice = cryptomus.create({
-        #     "amount": str(int(amount) * 10), # আপনার প্রাইস অনুযায়ী ক্যালকুলেশন
-        #     "currency": "USD",
-        #     "order_id": str(message.from_user.id) + "_" + amount
-        # })
-        # payment_url = invoice['result']['url']
-        # await message.answer(f"🔗 Payment Link:\n{payment_url}")
-        
-        # সাময়িকভাবে টেস্ট করার জন্য ডেমো টেক্সট:
-        await message.answer("✅ Apnar pament invoice toiri hoyeche. (Cryptomus API key connect korle ekhane payment link chole ashbe)")
-    except Exception as e:
-        await message.answer("❌ Payment link toiri korte somossa hoyeche. Doya kore abar chesta korun.")
-
-# ১. রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
+# ১. রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
 async def handle(request):
     return web.Response(text="Bot is running 24/7!")
 
