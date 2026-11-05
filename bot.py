@@ -30,6 +30,43 @@ async def start_cmd(message: types.Message):
         "Apni kon game-er item kinte chan, niche theke select korun:",
         reply_markup=keyboard
     )
+@dp.callback_query(F.data.in_(["buy_flight", "buy_ff", "buy_ml"]))
+async def process_game_selection(callback: types.CallbackQuery):
+    game_names = {
+        "buy_flight": "Flight Charbe Coins",
+        "buy_ff": "Free Fire Diamonds",
+        "buy_ml": "Mobile Legends Diamonds"
+    }
+    
+    selected_game = game_names.get(callback.data)
+    
+    await callback.message.answer(
+        f"Apni **{selected_game}** select korechen. 🎮\n\n"
+        "Doya kore apni koyti coin ba diamond kinte chan, tar poriman (number) ekhane likhe pathan (jemon: 100 ba 500):",
+        parse_mode="Markdown"
+    )
+    await callback.answer()
+@dp.message(F.text.regexp(r'^\d+$'))
+async def process_coin_amount(message: types.Message):
+    amount = int(message.text)
+    
+    price_per_coin = 0.01
+    total_price = amount * price_per_coin
+    
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=f"💳 Pay Now (${total_price:.2f})", callback_data="make_payment")]
+        ]
+    )
+    
+    await message.answer(
+        f"✅ Apni **{amount}** ti coin select korechen.\n"
+        f"💵 Proti coin-er dam: **$0.01**\n"
+        f"💰 Mot mullo (Total Price): **${total_price:.2f} USD**\n\n"
+        "Nicher button-e click kore payment complete korun:",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
 @dp.message(Command("support"))
 async def support_cmd(message: types.Message):
     support_text = (
