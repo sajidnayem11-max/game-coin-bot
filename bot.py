@@ -1,18 +1,15 @@
 import asyncio
 import os
+import aiohttp
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from cryptomus import Client  # ক্রিপ্টোমাস লাইব্রেরি
 
-# আপনার বটের টোকেন এবং ক্রিপ্টোমাস ক্রডেনশিয়াল এখানে বসাবেন
+# আপনার বটের টোকেন
 TOKEN = "9279326916:AAFUj10LZj054kY_sefZVKNOG05qETxXp3c"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
-
-# ক্রিপ্টোমাস ক্লায়েন্ট ইনিশিয়ালাইজেশন
-# cryptomus = Client.payment(api_key=PAYMENT_API_KEY, uuid=MERCHANT_UUID)
 
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
@@ -57,6 +54,48 @@ async def support_cmd(message: types.Message):
         "Amra apnake sahajjo korar jonno 24/7 prostut royechi!"
     )
     await message.answer(support_text, parse_mode="Markdown")
+
+# NOWPayments-এর মাধ্যমে ইনভয়েস তৈরি করার ফাংশন
+async def create_nowpayments_invoice(amount, total_price):
+    url = "https://api.nowpayments.io/v1/invoice"
+    headers = {
+        "x-api-key": "APNA_NOWPAYMENTS_API_KEY",  # এখানে তোমার NOWPayments API Key বসাবে
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "price_amount": total_price,
+        "price_currency": "usd",
+        "pay_currency": "usdttrc20",
+        "order_id": f"ORDER_{amount}_{int(asyncio.get_event_loop().time())}",
+        "order_description": f"{amount} Game Coins Purchase",
+        "ipn_url": "https://game-coin-bot.onrender.com/ipn",
+        "success_url": "https://game-coin-bot.onrender.com/success",
+        "cancel_url": "https://game-coin-bot.onrender.com/cancel"
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=payload, headers=headers) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data.get("invoice_url")
+            return None
+
+# ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে
+@dp.callback_query(F.data == "make_payment")
+async def process_payment_callback(callback: types.CallbackQuery):
+    invoice_url = await create_nowpayments_invoice(10, 0.12)
+    
+    if invoice_url:
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="🔗 Complete Payment", url=invoice_url)]
+            ]
+        )
+        await callback.message.answer("নিচের লিংকে ক্লিক করে পেমেন্ট সম্পন্ন করুন:", reply_markup=keyboard)
+    else:
+        await callback.message.answer("পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হচ্ছে। দয়া করে আবার চেষ্টা করুন।")
+    
+    await callback.answer()
 
 # ইউজার যখন কয়েনের পরিমাণ লিখে পাঠাবে (মূল পেমেন্ট পেজ এবং বাটন)
 @dp.message(F.text.regexp(r'^\d+$'))
