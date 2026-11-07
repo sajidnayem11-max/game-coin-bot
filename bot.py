@@ -68,7 +68,7 @@ async def create_nowpayments_invoice(amount, total_price):
         "pay_currency": "usdttrc20",
         "order_id": f"ORDER_{amount}_{int(asyncio.get_event_loop().time())}",
         "order_description": f"{amount} Game Coins Purchase",
-        "ipn_url": "https://game-coin-bot.onrender.com/ipn",
+        "ipn_url": "https://game-coin-bot.onrender.com/ipn",  # এখানে IPN লিঙ্ক যুক্ত করা হলো
         "success_url": "https://game-coin-bot.onrender.com/success",
         "cancel_url": "https://game-coin-bot.onrender.com/cancel"
     }
@@ -85,7 +85,6 @@ async def create_nowpayments_invoice(amount, total_price):
 # ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে
 @dp.callback_query(F.data == "make_payment")
 async def process_payment_callback(callback: types.CallbackQuery):
-    # NOWPayments-এ সর্বনিম্ন ১.০০ USD বা তার বেশি পেমেন্ট ছাড়া ইনভয়েস তৈরি হয় না
     invoice_url, error = await create_nowpayments_invoice(100, 2.00)
     
     if invoice_url:
@@ -122,12 +121,27 @@ async def process_coin_amount(message: types.Message):
         parse_mode="Markdown"
     )
 
-# ১. রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
+# IPN নোটিফিকেশন রিসিভ করার ওয়েব রাউট
+async def handle_ipn(request):
+    try:
+        data = await request.json()
+        payment_status = data.get("payment_status")
+        order_id = data.get("order_id")
+        
+        if payment_status in ["finished", "confirmed"]:
+            print(f"Payment successful for Order: {order_id}")
+            
+        return web.json_response({"status": "success"})
+    except Exception as e:
+        return web.json_response({"status": "error", "message": str(e)}, status=400)
+
+# মিনি ওয়েব সার্ভার
 async def handle(request):
     return web.Response(text="Bot is running 24/7!")
 
 app = web.Application()
 app.router.add_get("/", handle)
+app.router.add_post("/ipn", handle_ipn)
 
 async def start_web_server():
     runner = web.AppRunner(app)
@@ -136,7 +150,7 @@ async def start_web_server():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-# ২. মূল মেইন ফাংশন
+# মূল মেইন ফাংশন
 async def main():
     await asyncio.gather(
         start_web_server(),
