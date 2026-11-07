@@ -59,7 +59,7 @@ async def support_cmd(message: types.Message):
 async def create_nowpayments_invoice(amount, total_price):
     url = "https://api.nowpayments.io/v1/invoice"
     headers = {
-        "x-api-key": "BX8B69Z-A5B4PWH-Q85HAH8-135H7K1",  # এখানে তোমার NOWPayments API Key বসাবে
+        "x-api-key": "BX8B69Z-A5B4PWH-Q85HAH8-135H7K1",
         "Content-Type": "application/json"
     }
     payload = {
@@ -77,13 +77,16 @@ async def create_nowpayments_invoice(amount, total_price):
         async with session.post(url, json=payload, headers=headers) as response:
             if response.status == 200:
                 data = await response.json()
-                return data.get("invoice_url")
-            return None
+                return data.get("invoice_url"), None
+            else:
+                err_text = await response.text()
+                return None, f"Error Code {response.status}: {err_text}"
 
 # ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে
 @dp.callback_query(F.data == "make_payment")
 async def process_payment_callback(callback: types.CallbackQuery):
-    invoice_url = await create_nowpayments_invoice(10, 0.12)
+    # NOWPayments-এ সর্বনিম্ন ১.০০ USD বা তার বেশি পেমেন্ট ছাড়া ইনভয়েস তৈরি হয় না
+    invoice_url, error = await create_nowpayments_invoice(100, 2.00)
     
     if invoice_url:
         keyboard = InlineKeyboardMarkup(
@@ -93,15 +96,14 @@ async def process_payment_callback(callback: types.CallbackQuery):
         )
         await callback.message.answer("নিচের লিংকে ক্লিক করে পেমেন্ট সম্পন্ন করুন:", reply_markup=keyboard)
     else:
-        await callback.message.answer("পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হচ্ছে। দয়া করে আবার চেষ্টা করুন।")
+        await callback.message.answer(f"পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হচ্ছে।\nডিবাগ এরর: `{error}`", parse_mode="Markdown")
     
     await callback.answer()
 
-# ইউজার যখন কয়েনের পরিমাণ লিখে পাঠাবে (মূল পেমেন্ট পেজ এবং বাটন)
+# ইউজার যখন কয়েনের পরিমাণ লিখে পাঠাবে
 @dp.message(F.text.regexp(r'^\d+$'))
 async def process_coin_amount(message: types.Message):
     amount = int(message.text)
-    
     price_per_coin = 0.01
     total_price = amount * price_per_coin
     
