@@ -59,7 +59,7 @@ async def support_cmd(message: types.Message):
 async def create_nowpayments_invoice(amount, total_price):
     url = "https://api.nowpayments.io/v1/invoice"
     headers = {
-        "x-api-key": "APNA_NOWPAYMENTS_API_KEY",  # এখানে তোমার NOWPayments API Key বসাবে
+        "x-api-key": "BX8B69Z-A5B4PWH-Q85HAH8-135H7K1",  # এখানে তোমার NOWPayments API Key বসাবে
         "Content-Type": "application/json"
     }
     payload = {
