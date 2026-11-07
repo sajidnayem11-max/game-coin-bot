@@ -55,7 +55,7 @@ async def support_cmd(message: types.Message):
     )
     await message.answer(support_text, parse_mode="Markdown")
 
-# NOWPayments-এর মাধ্যমে ইনভয়েস তৈরি করার ফাংশন
+# NOWPayments-এর মাধ্যমে ইনভয়েস তৈরি করার ফাংশন (আইপিএন মুক্ত)
 async def create_nowpayments_invoice(amount, total_price):
     url = "https://api.nowpayments.io/v1/invoice"
     headers = {
@@ -67,10 +67,7 @@ async def create_nowpayments_invoice(amount, total_price):
         "price_currency": "usd",
         "pay_currency": "usdttrc20",
         "order_id": f"ORDER_{amount}_{int(asyncio.get_event_loop().time())}",
-        "order_description": f"{amount} Game Coins Purchase",
-        "ipn_url": "https://game-coin-bot.onrender.com/ipn",  # এখানে IPN লিঙ্ক যুক্ত করা হলো
-        "success_url": "https://game-coin-bot.onrender.com/success",
-        "cancel_url": "https://game-coin-bot.onrender.com/cancel"
+        "order_description": f"{amount} Game Coins Purchase"
     }
     
     async with aiohttp.ClientSession() as session:
@@ -121,27 +118,12 @@ async def process_coin_amount(message: types.Message):
         parse_mode="Markdown"
     )
 
-# IPN নোটিফিকেশন রিসিভ করার ওয়েব রাউট
-async def handle_ipn(request):
-    try:
-        data = await request.json()
-        payment_status = data.get("payment_status")
-        order_id = data.get("order_id")
-        
-        if payment_status in ["finished", "confirmed"]:
-            print(f"Payment successful for Order: {order_id}")
-            
-        return web.json_response({"status": "success"})
-    except Exception as e:
-        return web.json_response({"status": "error", "message": str(e)}, status=400)
-
-# মিনি ওয়েব সার্ভার
+# রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
 async def handle(request):
     return web.Response(text="Bot is running 24/7!")
 
 app = web.Application()
 app.router.add_get("/", handle)
-app.router.add_post("/ipn", handle_ipn)
 
 async def start_web_server():
     runner = web.AppRunner(app)
