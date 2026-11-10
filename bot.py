@@ -65,7 +65,6 @@ async def create_nowpayments_invoice(amount, total_price):
     payload = {
         "price_amount": total_price,
         "price_currency": "usd",
-        "pay_currency": "usdttrc20",
         "order_id": f"ORDER_{amount}_{int(asyncio.get_event_loop().time())}",
         "order_description": f"{amount} Game Coins Purchase"
     }
