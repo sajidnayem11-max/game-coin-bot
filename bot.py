@@ -11,6 +11,9 @@ TOKEN = "9279326916:AAFUj10LZj054kY_sefZVKNOG05qETxXp3c"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# ইউজারের সাময়িক ডেটা সেভ রাখার জন্য ডিকশনারি
+user_temp_data = {}
+
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     keyboard = InlineKeyboardMarkup(
@@ -55,7 +58,7 @@ async def support_cmd(message: types.Message):
     )
     await message.answer(support_text, parse_mode="Markdown")
 
-# NOWPayments-এর মাধ্যমে ইনভয়েস তৈরি করার ফাংশন (আইপিএন মুক্ত)
+# NOWPayments-এর মাধ্যমে ইনভয়েস তৈরি করার ফাংশন (ডায়নামিক অ্যামাউন্টসহ)
 async def create_nowpayments_invoice(amount, total_price):
     url = "https://api.nowpayments.io/v1/invoice"
     headers = {
@@ -78,29 +81,18 @@ async def create_nowpayments_invoice(amount, total_price):
                 err_text = await response.text()
                 return None, f"Error Code {response.status}: {err_text}"
 
-# ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে
-@dp.callback_query(F.data == "make_payment")
-async def process_payment_callback(callback: types.CallbackQuery):
-    invoice_url, error = await create_nowpayments_invoice(100, 2.00)
-    
-    if invoice_url:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text="🔗 Complete Payment", url=invoice_url)]
-            ]
-        )
-        await callback.message.answer("নিচের লিংকে ক্লিক করে পেমেন্ট সম্পন্ন করুন:", reply_markup=keyboard)
-    else:
-        await callback.message.answer(f"পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হচ্ছে।\nডিবাগ এরর: `{error}`", parse_mode="Markdown")
-    
-    await callback.answer()
-
 # ইউজার যখন কয়েনের পরিমাণ লিখে পাঠাবে
 @dp.message(F.text.regexp(r'^\d+$'))
 async def process_coin_amount(message: types.Message):
     amount = int(message.text)
     price_per_coin = 0.01
     total_price = amount * price_per_coin
+    
+    # ইউজারের চ্যাট আইডি অনুযায়ী অ্যামাউন্ট সেভ করে রাখা হলো
+    user_temp_data[message.from_user.id] = {
+        "amount": amount,
+        "total_price": total_price
+    }
     
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -116,6 +108,33 @@ async def process_coin_amount(message: types.Message):
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
+
+# ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে (ডায়নামিক ডেটা পাস হবে)
+@dp.callback_query(F.data == "make_payment")
+async def process_payment_callback(callback: types.CallbackQuery):
+    user_data = user_temp_data.get(callback.from_user.id)
+    
+    if not user_data:
+        await callback.message.answer("দুঃখিত, আবার প্রথম থেকে কয়েনের পরিমাণ লিখে পাঠান।")
+        await callback.answer()
+        return
+        
+    amount = user_data["amount"]
+    total_price = user_data["total_price"]
+    
+    invoice_url, error = await create_nowpayments_invoice(amount, total_price)
+    
+    if invoice_url:
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="🔗 Complete Payment", url=invoice_url)]
+            ]
+        )
+        await callback.message.answer("নিচের লিংকে ক্লিক করে পেমেন্ট সম্পন্ন করুন:", reply_markup=keyboard)
+    else:
+        await callback.message.answer(f"পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হচ্ছে।\nডিবাগ এরর: `{error}`", parse_mode="Markdown")
+    
+    await callback.answer()
 
 # রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
 async def handle(request):
