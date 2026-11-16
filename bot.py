@@ -1,6 +1,5 @@
 import asyncio
 import os
-import aiohttp
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -58,29 +57,6 @@ async def support_cmd(message: types.Message):
     )
     await message.answer(support_text, parse_mode="Markdown")
 
-# NOWPayments-এর মাধ্যমে ইনভয়েস তৈরি করার ফাংশন (ডায়নামিক অ্যামাউন্টসহ)
-async def create_nowpayments_invoice(amount, total_price):
-    url = "https://api.nowpayments.io/v1/invoice"
-    headers = {
-        "x-api-key": "BX8B69Z-A5B4PWH-Q85HAH8-135H7K1",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "price_amount": total_price,
-        "price_currency": "usd",
-        "order_id": f"ORDER_{amount}_{int(asyncio.get_event_loop().time())}",
-        "order_description": f"{amount} Game Coins Purchase"
-    }
-    
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, json=payload, headers=headers) as response:
-            if response.status == 200:
-                data = await response.json()
-                return data.get("invoice_url"), None
-            else:
-                err_text = await response.text()
-                return None, f"Error Code {response.status}: {err_text}"
-
 # ইউজার যখন কয়েনের পরিমাণ লিখে পাঠাবে
 @dp.message(F.text.regexp(r'^\d+$'))
 async def process_coin_amount(message: types.Message):
@@ -109,7 +85,7 @@ async def process_coin_amount(message: types.Message):
         parse_mode="Markdown"
     )
 
-# ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে (ডায়নামিক ডেটা পাস হবে)
+# ইউজার "Pay Now" বাটনে ক্লিক করলে যা হবে
 @dp.callback_query(F.data == "make_payment")
 async def process_payment_callback(callback: types.CallbackQuery):
     user_data = user_temp_data.get(callback.from_user.id)
@@ -122,18 +98,14 @@ async def process_payment_callback(callback: types.CallbackQuery):
     amount = user_data["amount"]
     total_price = user_data["total_price"]
     
-    invoice_url, error = await create_nowpayments_invoice(amount, total_price)
-    
-    if invoice_url:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text="🔗 Complete Payment", url=invoice_url)]
-            ]
-        )
-        await callback.message.answer("নিচের লিংকে ক্লিক করে পেমেন্ট সম্পন্ন করুন:", reply_markup=keyboard)
-    else:
-        await callback.message.answer(f"পেমেন্ট ইনভয়েস তৈরি করতে সমস্যা হচ্ছে।\nডিবাগ এরর: `{error}`", parse_mode="Markdown")
-    
+    # এখানে পরবর্তীতে ChangeNOW-এর পেমেন্ট কোড যুক্ত করা হবে
+    await callback.message.answer(
+        f"আপনার অর্ডারটি রিসিভ করা হয়েছে:\n"
+        f"পরিমাণ: **{amount}** টি কয়েন\n"
+        f"মোট মূল্য: **${total_price:.2f} USD**\n\n"
+        "খুব শীঘ্রই ChangeNOW পেমেন্ট গেটওয়ে যুক্ত করা হচ্ছে।",
+        parse_mode="Markdown"
+    )
     await callback.answer()
 
 # রেন্ডার পোর্ট ধরে রাখার জন্য মিনি ওয়েব সার্ভার
